@@ -10,24 +10,26 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class SavercreationSms
+class SavingsCreationProcessed
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
-    public $otp;
+    public $data;
     public $phone;
+
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($otp, $phone)
+
+    public function __construct($data, $phone)
     {
-        $this->otp = $otp;
+        $this->data = $data;
         $this->phone = $phone;
     }
 
     /**
-     * Get the channels the event should broadcast on.  
+     * Get the channels the event should broadcast on.
      *
      * @return \Illuminate\Broadcasting\Channel|array
      */

@@ -2,12 +2,11 @@
 
 namespace App\Listeners;
 
-use App\Events\SavercreationSms;
+use App\Events\SavingsCreationProcessed;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
-
-class SavercreationSmsNotification
+class SavingCreationNotification
 {
     /**
      * Create the event listener.
@@ -22,14 +21,14 @@ class SavercreationSmsNotification
     /**
      * Handle the event.
      *
-     * @param  \App\Events\SavercreationSms  $event
+     * @param  \App\Events\SavingsCreationProcessed  $event
      * @return void
      */
-    public function handle(SavercreationSms $event)
+    public function handle(SavingsCreationProcessed $event)
     {
         $client = new \GuzzleHttp\Client();
         $response = $client->request('POST', 'https://api.sendchamp.com/api/v1/sms/send', [
-            'body' => '{"to":["'.$event->phone.'"],"sender_name":"Alertapay","message":"Ajosuite  O . T . P setup successfully '.$event->otp.'","route":"dnd"}',
+            'body' => '{"to":["'.$event->phone.'"],"sender_name":"Alertapay","message":"'.$event->data.'","route":"dnd"}',
             'headers' => [
                 'Accept' => 'application/json',
                 'Authorization' => 'Bearer '.env('SENDCHAMP'),
@@ -37,8 +36,8 @@ class SavercreationSmsNotification
             ],
         ]);
         $vom = $response->getBody();
-        // event->otp
         Log::alert($vom);
-        // Log::alert($event->phone. "phone");
+        Log::alert($event->data);
+        Log::alert($event->phone);
     }
 }

@@ -6,9 +6,11 @@ use App\Models\Saver;
 use Illuminate\Http\Request;
 use Seshac\Otp\Otp;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Business;
 use App\Events\SavercreationSms;
 use App\Models\Moderator;
 use Illuminate\Support\Str;
+use Propaganistas\LaravelPhone\PhoneNumber;
 
 class SaverController extends Controller
 {
@@ -23,9 +25,38 @@ class SaverController extends Controller
         $request->validate([
             "phone_number" => "required|phone:NG"
         ]);
+        $business = Business::where("business_id", $user->business_id)->first();
+        if ($business == null) {
+            return response([
+                "message" => "Business doesn't exist",
+                "status" => "error"
+            ], 400);
+        }
+        if ($business->balance < 200) {
+            return response([
+                "message" => "Business account balance is low",
+                "status" => "error"
+            ], 400);
+        }
+        $checkphone = Saver::where("phone", $request->phone_number)->where("business_id", $user->business_id)->first();
+        if ($checkphone != null) {
+            if ($checkphone->status == 1) {
+                return response([
+                    "message" => "Already registered",
+                    "status" => "error",
+                ], 200);
+            }
+            if ($checkphone->status == 0) {
+                return response([
+                    "message" => "Continue registration process.",
+                    "status" => "incomplete",
+                    "saver" => $checkphone
+                ], 200);
+            }
+        }
         $otp_engine = new Otp();
         $otp =  Otp::setValidity(10)->setLength(4)->setOnlyDigits(true)->setUseSameToken(false)->generate("$request->phone_number/$user->business_id");
-        event(new SavercreationSms($otp->token, $this->unmake($request->phone_number)));
+        event(new SavercreationSms($otp->token, $this->make($request->phone_number)));
         return response([
             "message" => "OTP Sent to phone number",
             "status" => "success",
@@ -34,7 +65,13 @@ class SaverController extends Controller
     } 
 
     public static function unmake($phone){
-        return str_replace("234", "0", $phone);
+        return str_replace("0", "234", $phone);
+        
+    }
+    public static function make($phone, $country = "NG")
+    {
+        $phoneNumber = PhoneNumber::make($phone, $country);
+        return $phoneNumber;
     }
 
     public function SaverCreationStepTwo(Request $request) {
@@ -45,6 +82,21 @@ class SaverController extends Controller
         ]);
         $id = Auth::id();
         $moderator = Moderator::where("id", $id)->first();
+
+        $business = Business::where("business_id", $user->business_id)->first();
+        if ($business == null) {
+            return response([
+                "message" => "Business doesn't exist",
+                "status" => "error"
+            ], 400);
+        }
+        if ($business->balance < 200) {
+            return response([
+                "message" => "Business account balance is low",
+                "status" => "error"
+            ], 400);
+        }
+        $business->withdraw(200);
         
         $verify = Otp::setAllowedAttempts(2)->validate("$request->phone_number/$user->business_id", $request->token);
         // return $verify;
@@ -73,7 +125,8 @@ class SaverController extends Controller
         $user = Auth::user();
         $request->validate([
             "email" => "required|email",
-            "name" => "required|string",
+            "firstname" => "required|string",
+            "lastname" => "required|string",
             "saver_id" => "required|string"
         ]);
         $saver = Saver::where("saver_id", $request->saver_id)->first();
@@ -89,15 +142,16 @@ class SaverController extends Controller
                 "message" => "Not in this stage"
             ], 400);
         }
-        $hashed_random_password = Str::str_random(8);
+        $hashed_random_password = rand(10000000, 99999999);
 
         $saver->update([
             "email" => $request->email,
             "password" => bcrypt($hashed_random_password),
             "password_string" => $hashed_random_password,
-            "name" => $request->name,
+            "name" => $request->firstname.' '.$request->lastname,
             "status" => 1,
-            "email_recievers" => json_encode([$request->email])
+            "email_recievers" => json_encode([$request->email]),
+            "logo" => "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460__340.png"
         ]);
         $saver->save();
 
@@ -107,5 +161,44 @@ class SaverController extends Controller
             "message" => "Saver created successfully."
         ], 200);
         
+    }
+    public function listSavers(Request $request) {
+        $request->validate([
+            "page_number" => "required|integer",
+            "saver_id" => "nullable|string"
+        ]);
+        
+        if ($request->saver_id == null) {
+            $savers = Saver::orderBy('id', 'DESC')->paginate($request->page_number);
+            if ($savers->isNotEmpty()) {
+                return response([
+                    "status" => "success",
+                    "savers" => $savers,
+                    "message" => "Savers fetched successfully."
+                ], 200);
+            }
+            if ($savers->isEmpty()) {
+                return response([
+                    "status" => "error",
+                    "savers" => $savers,
+                    "message" => "No savers available."
+                ], 400);
+            }
+        }
+        $savers = Saver::orderBy('id', 'DESC')->where("saver_id", $request->saver_id)->orWhere("phone", $request->saver_id)->paginate($request->page_number);
+        if ($savers->isNotEmpty()) {
+            return response([
+                "status" => "success",
+                "savers" => $savers,
+                "message" => "Savers fetched successfully."
+            ], 200);
+        }
+        if ($savers->isEmpty()) {
+            return response([
+                "status" => "error",
+                "savers" => $savers,
+                "message" => "No savers available."
+            ], 400);
+        }
     }
 }

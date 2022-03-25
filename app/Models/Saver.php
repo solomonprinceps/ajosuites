@@ -14,10 +14,12 @@ class Saver extends Model
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $table = "savers";
+    protected $appends = ['emails'];
     protected $fillable = [
         "business_id",
         "moderator_id",
         "total_amount",
+        "total_savings",
         "status",
         "phone",
         "name",
@@ -25,6 +27,7 @@ class Saver extends Model
         "email",
         "password",
         "password_string",
+        "address",
         "email_recievers",
         "saver_id"
     ];
@@ -32,4 +35,14 @@ class Saver extends Model
     protected $hidden = [
         'password'
     ];
+
+    public function getEmailsAttribute()
+    {
+        return json_decode($this->email_recievers);
+    }
+
+    public function savings()
+    {
+        return $this->hasMany(Savings::class, "saver_id", "saver_id");
+    }
 }

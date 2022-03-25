@@ -6,6 +6,8 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\BusinessController;
 use App\Http\Controllers\ModeratorController;
 use App\Http\Controllers\SaverController;
+use App\Http\Controllers\SavingsController;
+use App\Http\Controllers\SavinglogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,6 +48,18 @@ Route::group(['prefix' => 'v1'], function () {
             Route::post('/stepone', [SaverController::class, 'SaverCreationStepOne'])->middleware(['auth:sanctum', 'type.moderator']);
             Route::post('/steptwo', [SaverController::class, 'SaverCreationStepTwo'])->middleware(['auth:sanctum', 'type.moderator']);
             Route::post('/stepthree', [SaverController::class, 'SaverCreationStepThree'])->middleware(['auth:sanctum', 'type.moderator']);
+        });
+
+        Route::group(['prefix' => "saver"], function() {
+            Route::post('/list', [SaverController::class, 'listSavers'])->middleware(['auth:sanctum', 'type.moderator']); 
+        });
+
+        Route::group(['prefix' => 'savings'], function() {
+            Route::post('/daily', [SavingsController::class, 'createsavingsdaily'])->middleware(['auth:sanctum', 'type.moderator']); 
+            Route::post('/list', [SavingsController::class, 'listsavings'])->middleware(['auth:sanctum', 'type.moderator']); 
+            Route::group(['prefix' => 'log'], function() {
+                Route::post('/list', [SavinglogController::class, 'listsavingLog'])->middleware(['auth:sanctum', 'type.moderator']); 
+            });
         });
 
     }); 

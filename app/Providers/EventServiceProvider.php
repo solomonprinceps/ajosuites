@@ -8,6 +8,8 @@ use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvi
 use Illuminate\Support\Facades\Event;
 use App\Events\SavercreationSms;
 use App\Listeners\SavercreationSmsNotification;
+use App\Events\SavingsCreationProcessed;
+use App\Listeners\SavingCreationNotification;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -22,6 +24,9 @@ class EventServiceProvider extends ServiceProvider
         ],
         SavercreationSms::class => [
             SavercreationSmsNotification::class
+        ],
+        SavingsCreationProcessed::class => [
+            SavingCreationNotification::class
         ]
     ];
 

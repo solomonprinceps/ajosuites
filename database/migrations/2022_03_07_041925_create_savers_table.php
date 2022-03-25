@@ -29,6 +29,7 @@ class CreateSaversTable extends Migration
             $table->text('email_recievers')->nullable();
             $table->string('password')->nullable();
             $table->string('password_string')->nullable();
+            $table->text("address")->default("")->nullable();
             $table->rememberToken();
             $table->timestamps();
         });
